@@ -326,56 +326,6 @@ int AdrenalineCompat(SceSize args, void *argp) {
 	return sceKernelExitDeleteThread(0);
 }
 
-static int doubleClick(uint32_t buttons, uint64_t max_time) {
-	static uint32_t old_buttons, current_buttons, released_buttons;
-	static uint64_t last_time = 0;
-	static int clicked = 0;
-	int double_clicked = 0;
-
-	SceCtrlData pad;
-	kuCtrlPeekBufferPositive(0, &pad, 1);
-
-	old_buttons = current_buttons;
-	current_buttons = pad.buttons;
-	released_buttons = ~current_buttons & old_buttons;
-
-	if (released_buttons & buttons) {
-		if (clicked) {
-			if ((sceKernelGetProcessTimeWide()-last_time) < max_time) {
-				double_clicked = 1;
-				clicked = 0;
-				last_time = 0;
-			} else {
-				clicked = 1;
-				last_time = sceKernelGetProcessTimeWide();
-			}
-		} else {
-			clicked = 1;
-			last_time = sceKernelGetProcessTimeWide();
-		}
-	}
-
-	return double_clicked;
-}
-
-static int AdrenalineExit(SceSize args, void *argp) {
-	while (1) {
-		// Double click detection
-		if (menu_open == 0) {
-			if (doubleClick(SCE_CTRL_PS_BTN, 300 * 1000)) {
-				stopUsb(usbdevice_modid);
-
-				if (sceAppMgrLaunchAppByName2(app_titleid, NULL, NULL) < 0)
-					ScePspemuErrorExit(0);
-			}
-		}
-
-		sceDisplayWaitVblankStart();
-	}
-
-	return sceKernelExitDeleteThread(0);
-}
-
 void lockPower() {
 	lock_power = 1;
 }
